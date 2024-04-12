@@ -50,8 +50,10 @@ def get_wholesale_purchase_plan(wholesale_catalog: list[Barrel]):
         currentgold = connection.execute(sqlalchemy.text("SELECT gold FROM global_inventory")).fetchone()[0]
         currentpotions = connection.execute(sqlalchemy.text("SELECT num_green_potions FROM global_inventory")).fetchone()[0]
         for barrel in wholesale_catalog:
-            if currentpotions < 10 and [0, 1, 0, 0] in barrel.potion_type and barrel.price <= currentgold:
+            print("barrel sku:", barrel.sku, "current potions:", currentpotions)
+            if currentpotions < 10 and barrel.potion_type == [0, 1, 0, 0] and barrel.price <= currentgold:
                 plan.append({"sku": barrel.sku, "quantity": 1})
+                print("     buying barrel")
                 break
 
     return plan
