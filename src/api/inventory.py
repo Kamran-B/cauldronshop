@@ -1,4 +1,5 @@
 from fastapi import APIRouter, Depends
+from src import database as db
 from pydantic import BaseModel
 from src.api import auth
 import math
