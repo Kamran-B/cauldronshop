@@ -1,3 +1,4 @@
+import sqlalchemy
 from fastapi import APIRouter, Depends
 from src import database as db
 from pydantic import BaseModel
