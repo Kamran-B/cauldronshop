@@ -52,14 +52,11 @@ def post_deliver_barrels(barrels_delivered: list[Barrel], order_id: int):
             else:
                 raise Exception("Invalid potion type")
         
-        connection.execute(sqlalchemy.text(
-            """UPDATE global_inventory SET 
-            num_green_ml = num_green_ml + :newGreen
-            num_red_ml = num_red_ml + :newRed
-            num_blue_ml = num_blue_ml + :newBlue
-            num_dark_ml = num_dark_ml + :newDark
-            gold = gold - :costval
-            """), [{'newGreen': newGreenMl, 'newRed': newRedMl, 'newBlue': newBlueMl, 'newDark': newDarkMl, 'costval': cost}])
+        connection.execute(sqlalchemy.text("UPDATE global_inventory SET num_green_ml = num_green_ml + :new"), {'new': newGreenMl})
+        connection.execute(sqlalchemy.text("UPDATE global_inventory SET num_red_ml = num_green_ml + :new"), {'new': newRedMl})
+        connection.execute(sqlalchemy.text("UPDATE global_inventory SET num_blue_ml = num_green_ml + :new"), {'new': newBlueMl})
+        #connection.execute(sqlalchemy.text("UPDATE global_inventory SET num_dark_ml = num_dark_ml + :new"), {'new': newDarkMl})
+        connection.execute(sqlalchemy.text("UPDATE global_inventory SET gold = gold - :costval"), {'costval': cost})
 
         #connection.execute(sqlalchemy.text("UPDATE global_inventory SET num_green_ml = num_green_ml + :new"), {'new': newGreenMl})
         #connection.execute(sqlalchemy.text("UPDATE global_inventory SET num_red_ml = num_green_ml + :new"), {'new': newRedMl})
