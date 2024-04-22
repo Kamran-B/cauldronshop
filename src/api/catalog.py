@@ -12,34 +12,20 @@ def get_catalog():
     """
     catalog = []
     with db.engine.begin() as connection:
-        green = connection.execute(sqlalchemy.text("SELECT num_green_potions FROM global_inventory")).fetchone()[0]
-        red = connection.execute(sqlalchemy.text("SELECT num_red_potions FROM global_inventory")).fetchone()[0]
-        blue = connection.execute(sqlalchemy.text("SELECT num_blue_potions FROM global_inventory")).fetchone()[0]
-    
+        potions = connection.execute(sqlalchemy.text("SELECT * FROM potions")).fetchall()
+        print("Current inventory:", potions)
 
-    if green > 0:
-        catalog.append({
-                "sku": "GREEN_POTION_0",
-                "name": "green potion",
-                "quantity": 1,
+        for potion in potions:
+            if potion[2] > 0:
+                catalog.append({
+                "sku": potion[1],
+                "name": potion[4],
+                "quantity": potion[2],
                 "price": 50,
-                "potion_type": [0, 100, 0, 0],
-            })
-    if red > 0:
-        catalog.append({
-                "sku": "RED_POTION_0",
-                "name": "red potion",
-                "quantity": 1,
-                "price": 50,
-                "potion_type": [100, 0, 0, 0],
-            })
-    if blue > 0:
-        catalog.append({
-                "sku": "BLUE_POTION_0",
-                "name": "blue potion",
-                "quantity": 1,
-                "price": 50,
-                "potion_type": [0, 0, 100, 0],
-            })
-
+                "potion_type": potion[3][1:-1].split(", "),
+                })
+            
+            if len(catalog) >= 6:
+                break
+                
     return catalog
