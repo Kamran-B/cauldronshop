@@ -21,14 +21,13 @@ class Barrel(BaseModel):
 
 @router.post("/deliver/{order_id}")
 def post_deliver_barrels(barrels_delivered: list[Barrel], order_id: int):
-    """ """
     print(f"barrels delievered: {barrels_delivered} order_id: {order_id}")
 
-    try:
+    """try:
         connection.execute(sqlalchemy.text("INSERT INTO processed (job_id, type) VALUES (:order_id, 'barrels')"), 
             [{"order_id": order_id}])
     except:
-        return "OK"
+        return "OK" """
 
     newGreenMl = 0
     newRedMl = 0
@@ -37,14 +36,12 @@ def post_deliver_barrels(barrels_delivered: list[Barrel], order_id: int):
     cost = 0
 
     with db.engine.begin() as connection:
-        print("gold tuple:", connection.execute(sqlalchemy.text("SELECT gold FROM global_inventory")).fetchone())
-        currentgold = connection.execute(sqlalchemy.text("SELECT gold FROM global_inventory")).fetchone()[0]
         for barrel in barrels_delivered:
             cost += barrel.price * barrel.quantity
-            if barrel.potion_type == [0, 1, 0, 0]:
-                newGreenMl += barrel.ml_per_barrel * barrel.quantity
-            elif barrel.potion_type == [1, 0, 0, 0]:
+            if barrel.potion_type == [1, 0, 0, 0]:
                 newRedMl += barrel.ml_per_barrel * barrel.quantity
+            elif barrel.potion_type == [0, 1, 0, 0]:
+                newGreenMl += barrel.ml_per_barrel * barrel.quantity
             elif barrel.potion_type == [0, 0, 1, 0]:
                 newBlueMl += barrel.ml_per_barrel * barrel.quantity
             elif barrel.potion_type == [0, 0, 0, 1]:
@@ -52,18 +49,15 @@ def post_deliver_barrels(barrels_delivered: list[Barrel], order_id: int):
             else:
                 raise Exception("Invalid potion type")
         
-        connection.execute(sqlalchemy.text("UPDATE global_inventory SET num_green_ml = num_green_ml + :new"), {'new': newGreenMl})
-        connection.execute(sqlalchemy.text("UPDATE global_inventory SET num_red_ml = num_green_ml + :new"), {'new': newRedMl})
-        connection.execute(sqlalchemy.text("UPDATE global_inventory SET num_blue_ml = num_green_ml + :new"), {'new': newBlueMl})
-        #connection.execute(sqlalchemy.text("UPDATE global_inventory SET num_dark_ml = num_dark_ml + :new"), {'new': newDarkMl})
-        connection.execute(sqlalchemy.text("UPDATE global_inventory SET gold = gold - :costval"), {'costval': cost})
+        connection.execute(sqlalchemy.text("""UPDATE global_inventory 
+                                           SET num_red_ml = num_red_ml + :newRed,
+                                           num_green_ml = num_green_ml + :newGreen,
+                                           num_blue_ml = num_blue_ml + :newBlue,
+                                           num_dark_ml = num_dark_ml + :newDark,
+                                           gold = gold - :cost
+                                           """), {'newRed': newRedMl, 'newGreen': newGreenMl, 'newBlue': newBlueMl, 'newDark': newDarkMl, 'cost': cost})
 
-        #connection.execute(sqlalchemy.text("UPDATE global_inventory SET num_green_ml = num_green_ml + :new"), {'new': newGreenMl})
-        #connection.execute(sqlalchemy.text("UPDATE global_inventory SET num_red_ml = num_green_ml + :new"), {'new': newRedMl})
-        #connection.execute(sqlalchemy.text("UPDATE global_inventory SET num_blue_ml = num_green_ml + :new"), {'new': newBlueMl})
-        #connection.execute(sqlalchemy.text("UPDATE global_inventory SET gold = gold - :costval"), {'costval': cost})
-
-        print(f"gold paid: {cost}, red: {newRedMl}, green: {newGreenMl}, blue: {newBlueMl}")
+        print(f"gold paid: {cost}, red: {newRedMl}, green: {newGreenMl}, blue: {newBlueMl}, dark: {newDarkMl}")
 
     return "OK"
 
@@ -74,15 +68,33 @@ def get_wholesale_purchase_plan(wholesale_catalog: list[Barrel]):
     print(wholesale_catalog)
     plan = []
     with db.engine.begin() as connection:
-        print("gold tuple:", connection.execute(sqlalchemy.text("SELECT gold FROM global_inventory")).fetchone())
         currentgold = connection.execute(sqlalchemy.text("SELECT gold FROM global_inventory")).fetchone()[0]
-        currentpotions = connection.execute(sqlalchemy.text("SELECT num_green_potions FROM global_inventory")).fetchone()[0]
-        for barrel in wholesale_catalog:
-            print("barrel sku:", barrel.sku, "current potions:", currentpotions)
-            if currentpotions < 10 and (barrel.potion_type in [[0, 1, 0, 0], [1, 0, 0, 0], [0, 0, 1, 0]]) and barrel.price <= currentgold:
-                plan.append({"sku": barrel.sku, "quantity": 1})
-                print("     buying barrel")
-                break
+        redStock = connection.execute(sqlalchemy.text("SELECT num_red_ml FROM global_inventory")).fetchone()[0]
+        greenStock = connection.execute(sqlalchemy.text("SELECT num_green_ml FROM global_inventory")).fetchone()[0]
+        blueStock = connection.execute(sqlalchemy.text("SELECT num_blue_ml FROM global_inventory")).fetchone()[0]
+        darkStock = connection.execute(sqlalchemy.text("SELECT num_dark_ml FROM global_inventory")).fetchone()[0]
+        colors = {"red": [1, 0, 0, 0], "green": [0, 1, 0, 0], "blue": [0, 0, 1, 0], "dark": [0, 0, 0, 1]}
+        allStock = {"red": redStock, "green": greenStock, "blue": blueStock, "dark": darkStock}
+        print(allStock)
+        allStock = dict(sorted(allStock.items(), key=lambda item: item[1]))
+        print(allStock)
+
+        for color in allStock:
+            type = colors[color]
+            print(type, wholesale_catalog)
+            colorBarrels = [bar for bar in wholesale_catalog if bar.potion_type == type]
+            print(colorBarrels)
+            bestIndex = None
+            bestValue = 0
+            for i in range (len(colorBarrels)):
+                if colorBarrels[i].price <= currentgold and (colorBarrels[i].ml_per_barrel / colorBarrels[i].price) > bestValue:
+                    bestIndex = i
+                    bestValue = colorBarrels[i].ml_per_barrel / colorBarrels[i].price
+            
+            if bestIndex is not None:
+                quantity = min((currentgold // colorBarrels[i].price) // 2, colorBarrels[i].quantity)
+                plan.append({"sku": colorBarrels[bestIndex].sku, "quantity": quantity})
+                currentgold -= colorBarrels[bestIndex].price * quantity
 
     return plan
 

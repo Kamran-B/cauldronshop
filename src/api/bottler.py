@@ -17,31 +17,28 @@ class PotionInventory(BaseModel):
 
 @router.post("/deliver/{order_id}")
 def post_deliver_bottles(potions_delivered: list[PotionInventory], order_id: int):
-    """ """
     print(f"potions delievered: {potions_delivered} order_id: {order_id}")
     with db.engine.begin() as connection:
-        currentGreenPotions = connection.execute(sqlalchemy.text("SELECT num_green_potions FROM global_inventory")).fetchone()[0]
-        currentGreenMl = connection.execute(sqlalchemy.text("SELECT num_green_ml FROM global_inventory")).fetchone()[0]
-        currentRedPotions = connection.execute(sqlalchemy.text("SELECT num_red_potions FROM global_inventory")).fetchone()[0]
-        currentRedMl = connection.execute(sqlalchemy.text("SELECT num_red_ml FROM global_inventory")).fetchone()[0]
-        currentBluePotions = connection.execute(sqlalchemy.text("SELECT num_blue_potions FROM global_inventory")).fetchone()[0]
-        currentBlueMl = connection.execute(sqlalchemy.text("SELECT num_blue_ml FROM global_inventory")).fetchone()[0]
+        usedRedMl = 0
+        usedGreenMl = 0
+        usedBlueMl = 0
+        usedDarkMl = 0
         for potion in potions_delivered:
-            if potion.potion_type == [100, 0, 0, 0]:
-                currentGreenPotions += 1
-                currentGreenMl -= 100
-            if potion.potion_type == [0, 100, 0, 0]:
-                currentRedPotions += 1
-                currentRedMl -= 100
-            if potion.potion_type == [0, 0, 100, 0]:
-                currentBluePotions += 1
-                currentBlueMl -= 100
-        connection.execute(sqlalchemy.text("UPDATE global_inventory SET num_green_ml = :currentml"), {'currentml': currentGreenMl})
-        connection.execute(sqlalchemy.text("UPDATE global_inventory SET num_green_potions = :currentpotions"), {'currentpotions': currentGreenPotions})
-        connection.execute(sqlalchemy.text("UPDATE global_inventory SET num_red_ml = :currentml"), {'currentml': currentRedMl})
-        connection.execute(sqlalchemy.text("UPDATE global_inventory SET num_red_potions = :currentpotions"), {'currentpotions': currentRedPotions})
-        connection.execute(sqlalchemy.text("UPDATE global_inventory SET num_blue_ml = :currentml"), {'currentml': currentBlueMl})
-        connection.execute(sqlalchemy.text("UPDATE global_inventory SET num_blue_potions = :currentpotions"), {'currentpotions': currentBluePotions})
+            usedRedMl += potion.potion_type[0] * potion.quantity
+            usedGreenMl += potion.potion_type[1] * potion.quantity
+            usedBlueMl  += potion.potion_type[2] * potion.quantity
+            usedDarkMl += potion.potion_type[3] * potion.quantity
+            connection.execute(sqlalchemy.text("""UPDATE potions 
+                                            SET quantity = quantity + :quant
+                                            WHERE type = :type
+                                           """), {'quant': potion.quantity, 'type': str(potion.potion_type)})
+
+        connection.execute(sqlalchemy.text("""UPDATE global_inventory 
+                                           SET num_red_ml = num_red_ml - :usedRedMl,
+                                            num_green_ml = num_green_ml - :usedGreenMl,
+                                            num_blue_ml = num_blue_ml - :usedBlueMl,
+                                            num_dark_ml = num_dark_ml - :usedDarkMl
+                                           """), {'usedRedMl': usedRedMl, 'usedGreenMl': usedGreenMl, 'usedBlueMl': usedBlueMl, 'usedDarkMl': usedDarkMl})
 
 
     return "OK"
@@ -60,29 +57,31 @@ def get_bottle_plan():
 
     newpotions = 0
     with db.engine.begin() as connection:
-        currentGreenMl = connection.execute(sqlalchemy.text("SELECT num_green_ml FROM global_inventory")).fetchone()[0]
         currentRedMl = connection.execute(sqlalchemy.text("SELECT num_red_ml FROM global_inventory")).fetchone()[0]
+        currentGreenMl = connection.execute(sqlalchemy.text("SELECT num_green_ml FROM global_inventory")).fetchone()[0]
         currentBlueMl = connection.execute(sqlalchemy.text("SELECT num_blue_ml FROM global_inventory")).fetchone()[0]
-        newGreenPotions = currentGreenMl // 100
-        newRedPotions = currentRedMl // 100
-        newBluePotions = currentBlueMl // 100
+        currentDarkMl = connection.execute(sqlalchemy.text("SELECT num_dark_ml FROM global_inventory")).fetchone()[0]
         plan = []
         
-        if newGreenPotions > 0:
-            plan.append({
-                    "potion_type": [0, 100, 0, 0],
-                    "quantity": newGreenPotions,
-                })
-        if newRedPotions > 0:
-            plan.append({
-                    "potion_type": [100, 0, 0, 0],
-                    "quantity": newRedPotions,
-                })
-        if newBluePotions > 0:
-            plan.append({
-                    "potion_type": [0, 0, 100, 0],
-                    "quantity": newBluePotions,
-                })
+        lowStock = connection.execute(sqlalchemy.text("SELECT type FROM potions ORDER BY quantity ASC")).fetchall()
+        print(lowStock)
+        for i in range(len(lowStock)):
+            lowStock[i] = lowStock[i][0][1:-1].split(", ")
+            lowStock[i] = [int(x) for x in lowStock[i]]
+        
+        for type in lowStock:
+            quantity = 1
+            while currentRedMl >= type[0] * quantity and currentGreenMl >= type[1] * quantity and currentBlueMl >= type[2] * quantity and currentDarkMl >= type[3] * quantity:
+                quantity += 1
+            quantity -= 1
+
+            if quantity > 0:
+                plan.append({"potion_type": type, "quantity": quantity})
+
+                currentRedMl -= type[0] * quantity
+                currentGreenMl -= type[1] * quantity
+                currentBlueMl -= type[2] * quantity
+                currentDarkMl -= type[3] * quantity
 
         return plan
 
