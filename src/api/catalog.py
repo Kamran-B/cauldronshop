@@ -21,7 +21,7 @@ def get_catalog():
                 "sku": potion[1],
                 "name": potion[4],
                 "quantity": potion[2],
-                "price": 50,
+                "price": potion[5],
                 "potion_type": potion[3][1:-1].split(", "),
                 })
             
