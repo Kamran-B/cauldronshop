@@ -117,10 +117,10 @@ class CartItem(BaseModel):
 @router.post("/{cart_id}/items/{item_sku}")
 def set_item_quantity(cart_id: int, item_sku: str, cart_item: CartItem):
     with db.engine.begin() as connection:
-        potionId = connection.execute(sqlalchemy.text("SELECT id FROM potions WHERE sku = :sku"), {'sku': item_sku}).fetchone()[0]
-        connection.execute(sqlalchemy.text("""INSERT INTO cart_items (cart_id, potion_id, quantity)
-                                            VALUES (:cartId, :potionId, :quantity)
-                                           """), {'cartId': cart_id, 'potionId': potionId, 'quantity': cart_item.quantity})
+        potion = connection.execute(sqlalchemy.text("SELECT id, price FROM potions WHERE sku = :sku"), {'sku': item_sku}).fetchone()
+        connection.execute(sqlalchemy.text("""INSERT INTO cart_items (cart_id, potion_id, quantity, price)
+                                            VALUES (:cartId, :potionId, :quantity, :price)
+                                           """), {'cartId': cart_id, 'potionId': potion[0], 'quantity': cart_item.quantity, 'price': potion[1]})
     return "OK"
 
 
@@ -137,7 +137,7 @@ def checkout(cart_id: int, cart_checkout: CartCheckout):
             potion_id = potion[1]
             quantity = potion[2]
             potions_bought += quantity
-            cost += connection.execute(sqlalchemy.text("SELECT price FROM potions WHERE id = :potion_id"), {'potion_id': potion_id}).fetchone()[0] * quantity
+            cost += potion[3] * quantity
             connection.execute(sqlalchemy.text("""UPDATE potions 
                                                SET quantity = quantity - :quantity
                                                WHERE id = :potion_id
