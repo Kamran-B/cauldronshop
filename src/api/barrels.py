@@ -94,7 +94,7 @@ def get_wholesale_purchase_plan(wholesale_catalog: list[Barrel]):
             if bestIndex is not None:
                 quantity = min((currentgold // colorBarrels[i].price) // 2, colorBarrels[i].quantity)
                 plan.append({"sku": colorBarrels[bestIndex].sku, "quantity": quantity})
-                print("buying barrel sku:", colorBarrels[bestIndex].sku, "current gold before purchase:", currentgold)
+                print("buying barrel sku:", colorBarrels[bestIndex].sku, "quantity:", quantity, "current gold before purchase:", currentgold)
                 currentgold -= colorBarrels[bestIndex].price * quantity
 
     return plan
