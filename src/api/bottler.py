@@ -63,7 +63,7 @@ def get_bottle_plan():
         currentDarkMl = connection.execute(sqlalchemy.text("SELECT num_dark_ml FROM global_inventory")).fetchone()[0]
         plan = []
         
-        lowStock = connection.execute(sqlalchemy.text("SELECT type FROM potions ORDER BY quantity ASC")).fetchall()
+        lowStock = connection.execute(sqlalchemy.text("SELECT type FROM potions ORDER BY quantity ASC, price DESC")).fetchall()
         print(lowStock)
         for i in range(len(lowStock)):
             lowStock[i] = lowStock[i][0][1:-1].split(", ")
