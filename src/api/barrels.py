@@ -68,16 +68,13 @@ def get_wholesale_purchase_plan(wholesale_catalog: list[Barrel]):
     print(wholesale_catalog)
     plan = []
     with db.engine.begin() as connection:
-        currentgold = connection.execute(sqlalchemy.text("SELECT gold FROM global_inventory")).fetchone()[0]
-        redStock = connection.execute(sqlalchemy.text("SELECT num_red_ml FROM global_inventory")).fetchone()[0]
-        greenStock = connection.execute(sqlalchemy.text("SELECT num_green_ml FROM global_inventory")).fetchone()[0]
-        blueStock = connection.execute(sqlalchemy.text("SELECT num_blue_ml FROM global_inventory")).fetchone()[0]
-        darkStock = connection.execute(sqlalchemy.text("SELECT num_dark_ml FROM global_inventory")).fetchone()[0]
+        currentgold, redStock, greenStock, blueStock, darkStock, capacity = connection.execute(sqlalchemy.text("SELECT gold, num_red_ml, num_green_ml, num_blue_ml, num_dark_ml, ml_capacity FROM global_inventory")).fetchone()
+        total_ml = redStock + greenStock + blueStock + darkStock
         colors = {"red": [1, 0, 0, 0], "green": [0, 1, 0, 0], "blue": [0, 0, 1, 0], "dark": [0, 0, 0, 1]}
         allStock = {"red": redStock, "green": greenStock, "blue": blueStock, "dark": darkStock}
-        print(allStock)
+        print("current stock:", allStock)
         allStock = dict(sorted(allStock.items(), key=lambda item: item[1]))
-        print(allStock)
+        print("sorted by lowest stock:", allStock)
 
         for color in allStock:
             type = colors[color]
@@ -95,6 +92,11 @@ def get_wholesale_purchase_plan(wholesale_catalog: list[Barrel]):
                 quantity = min((currentgold // colorBarrels[i].price) // 2, colorBarrels[i].quantity)
                 if quantity == 0:
                     quantity = 1
+                
+                if total_ml + colorBarrels[i].ml_per_barrel * quantity > capacity:
+                    quantity = (capacity - total_ml) // colorBarrels[i].ml_per_barrel
+                total_ml += colorBarrels[i].ml_per_barrel * quantity
+
                 plan.append({"sku": colorBarrels[bestIndex].sku, "quantity": quantity})
                 print("buying barrel sku:", colorBarrels[bestIndex].sku, "quantity:", quantity, "current gold before purchase:", currentgold)
                 currentgold -= colorBarrels[bestIndex].price * quantity
