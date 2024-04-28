@@ -31,7 +31,9 @@ CREATE TABLE global_inventory (
     num_red_ml INT4,
     num_green_ml INT4,
     num_blue_ml INT4,
-    num_dark_ml INT4
+    num_dark_ml INT4,
+    potion_capacity INT4,
+    ml_capacity INT4
 );
 
 CREATE TABLE processed (
@@ -39,3 +41,6 @@ CREATE TABLE processed (
     job_id INT4,
     type TEXT
 );
+
+INSERT INTO global_inventory (gold, num_red_ml, num_green_ml, num_blue_ml, num_dark_ml, potion_capacity, ml_capacity) 
+VALUES (100, 0, 0, 0, 0, 50, 10000)
