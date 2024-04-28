@@ -23,6 +23,7 @@ CREATE TABLE cart_items (
     cart_id INT4 REFERENCES carts(id),
     potion_id INT4 REFERENCES potions(id),
     quantity INT4,
+    price INT4,
     PRIMARY KEY (cart_id, potion_id)
 );
 
