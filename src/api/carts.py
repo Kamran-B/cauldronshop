@@ -130,19 +130,22 @@ class CartCheckout(BaseModel):
 @router.post("/{cart_id}/checkout")
 def checkout(cart_id: int, cart_checkout: CartCheckout):
     with db.engine.begin() as connection:
-        items = connection.execute(sqlalchemy.text("SELECT * FROM cart_items WHERE cart_id = :cart"), {'cart': cart_id}).fetchall()
+        items = connection.execute(sqlalchemy.text("SELECT potion_id, quantity, price FROM cart_items WHERE cart_id = :cart"), {'cart': cart_id}).fetchall()
         potions_bought = 0
         cost = 0
         for potion in items:
-            potion_id = potion[1]
-            quantity = potion[2]
+            potion_id = potion[0]
+            quantity = potion[1]
             potions_bought += quantity
-            cost += potion[3] * quantity
+            cost += potion[2] * quantity
             connection.execute(sqlalchemy.text("""UPDATE potions 
                                                SET quantity = quantity - :quantity
                                                WHERE id = :potion_id
                                                """), {'quantity': quantity, 'potion_id': potion_id})
         
+        connection.execute(sqlalchemy.text("""INSERT INTO gold_ledger (change, description)
+                                              VALUES (:cost, 'selling potions')
+                                           """), {'cost': cost})
         connection.execute(sqlalchemy.text("UPDATE global_inventory SET gold = gold + :payment"), {'payment': cost})
 
     return {"total_potions_bought": potions_bought, "total_gold_paid": cost}
