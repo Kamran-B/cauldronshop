@@ -99,6 +99,8 @@ def get_wholesale_purchase_plan(wholesale_catalog: list[Barrel]):
                 
                 if total_ml + colorBarrels[i].ml_per_barrel * quantity > capacity:
                     quantity = (capacity - total_ml) // colorBarrels[i].ml_per_barrel
+                    if quantity == 0:
+                        continue
                 total_ml += colorBarrels[i].ml_per_barrel * quantity
 
                 plan.append({"sku": colorBarrels[bestIndex].sku, "quantity": quantity})
