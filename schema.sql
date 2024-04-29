@@ -15,7 +15,6 @@ CREATE TABLE potions (
     sku TEXT,
     name TEXT,
     type TEXT,
-    quantity INT4,
     price INT4
 );
 
@@ -27,27 +26,52 @@ CREATE TABLE cart_items (
     PRIMARY KEY (cart_id, potion_id)
 );
 
-CREATE TABLE global_inventory (
-    id SERIAL PRIMARY KEY,
-    gold INT4,
-    num_red_ml INT4,
-    num_green_ml INT4,
-    num_blue_ml INT4,
-    num_dark_ml INT4,
-    potion_capacity INT4,
-    ml_capacity INT4
-);
-
 CREATE TABLE processed (
     id SERIAL PRIMARY KEY,
     job_id INT4,
     type TEXT
 );
 
-INSERT INTO global_inventory (gold, num_red_ml, num_green_ml, num_blue_ml, num_dark_ml, potion_capacity, ml_capacity) 
-VALUES (100, 0, 0, 0, 0, 50, 10000);
+CREATE TABLE gold_ledger (
+    id SERIAL PRIMARY KEY,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    change INT4,
+    description TEXT
+);
 
+CREATE TABLE ml_ledger (
+    id SERIAL PRIMARY KEY,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    type TEXT
+    change INT4,
+    description TEXT
+);
+
+CREATE TABLE potion_ledger (
+    id SERIAL PRIMARY KEY,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    potion_id INT4 REFERENCES potions(id),
+    change INT4,
+    description TEXT
+);
+
+CREATE TABLE capacity_ledger (
+    id SERIAL PRIMARY KEY,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    type TEXT
+    change INT4,
+    description TEXT
+);
     
+INSERT INTO gold_ledger (change, description) 
+VALUES (100, 'initial gold');
+
+INSERT INTO capacity_ledger (change, type, description) 
+VALUES (50, 'potion', 'initial capacity');
+
+INSERT INTO capacity_ledger (change, type, description) 
+VALUES (10000, 'ml', 'initial capacity');
+
 INSERT INTO potions (sku, name, type, quantity, price) 
 VALUES ('RED_POTION_0', 'red potion', '[100, 0, 0, 0]', 0, 40);
 
