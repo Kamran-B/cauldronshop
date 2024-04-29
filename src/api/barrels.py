@@ -4,6 +4,8 @@ from fastapi import APIRouter, Depends
 from pydantic import BaseModel
 from src.api import auth
 
+import json
+
 router = APIRouter(
     prefix="/barrels",
     tags=["barrels"],
@@ -38,6 +40,10 @@ def post_deliver_barrels(barrels_delivered: list[Barrel], order_id: int):
     with db.engine.begin() as connection:
         for barrel in barrels_delivered:
             cost += barrel.price * barrel.quantity
+            connection.execute(sqlalchemy.text("""INSERT INTO ml_ledger (change, type, description)
+                                              VALUES (:ml, :type, 'buying barrels')
+                                           """), {'ml': barrel.ml_per_barrel * barrel.quantity, 'type': json.dumps(barrel.potion_type)})
+            
             if barrel.potion_type == [1, 0, 0, 0]:
                 newRedMl += barrel.ml_per_barrel * barrel.quantity
             elif barrel.potion_type == [0, 1, 0, 0]:
@@ -52,6 +58,7 @@ def post_deliver_barrels(barrels_delivered: list[Barrel], order_id: int):
         connection.execute(sqlalchemy.text("""INSERT INTO gold_ledger (change, description)
                                               VALUES (:cost, 'buying barrels')
                                            """), {'cost': -1 * cost})
+
         
         connection.execute(sqlalchemy.text("""UPDATE global_inventory 
                                            SET num_red_ml = num_red_ml + :newRed,
@@ -71,8 +78,16 @@ def get_wholesale_purchase_plan(wholesale_catalog: list[Barrel]):
     print(wholesale_catalog)
     plan = []
     with db.engine.begin() as connection:
-        currentgold, redStock, greenStock, blueStock, darkStock, capacity = connection.execute(sqlalchemy.text("SELECT gold, num_red_ml, num_green_ml, num_blue_ml, num_dark_ml, ml_capacity FROM global_inventory")).fetchone()
+        #currentgold, redStock, greenStock, blueStock, darkStock, capacity = connection.execute(sqlalchemy.text("SELECT gold, num_red_ml, num_green_ml, num_blue_ml, num_dark_ml, ml_capacity FROM global_inventory")).fetchone()
+        redStock, greenStock, blueStock, darkStock = connection.execute(sqlalchemy.text(""" SELECT 
+                                                    SUM(CASE WHEN type = '[1, 0, 0, 0]' THEN change ELSE 0 END),
+                                                    SUM(CASE WHEN type = '[0, 1, 0, 0]' THEN change ELSE 0 END),
+                                                    SUM(CASE WHEN type = '[0, 0, 1, 0]' THEN change ELSE 0 END),
+                                                    SUM(CASE WHEN type = '[0, 0, 0, 1]' THEN change ELSE 0 END)
+                                                    FROM ml_ledger
+                                                    """)).fetchone()
         currentgold = connection.execute(sqlalchemy.text("SELECT sum(change) FROM gold_ledger")).fetchone()[0]
+        capacity = connection.execute(sqlalchemy.text("SELECT ml_capacity FROM global_inventory")).fetchone()[0]
         total_ml = redStock + greenStock + blueStock + darkStock
         colors = {"red": [1, 0, 0, 0], "green": [0, 1, 0, 0], "blue": [0, 0, 1, 0], "dark": [0, 0, 0, 1]}
         allStock = {"red": redStock, "green": greenStock, "blue": blueStock, "dark": darkStock}

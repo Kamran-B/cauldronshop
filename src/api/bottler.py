@@ -32,7 +32,24 @@ def post_deliver_bottles(potions_delivered: list[PotionInventory], order_id: int
                                             SET quantity = quantity + :quant
                                             WHERE type = :type
                                            """), {'quant': potion.quantity, 'type': str(potion.potion_type)})
-
+            
+        if usedRedMl > 0:
+            connection.execute(sqlalchemy.text("""INSERT INTO ml_ledger (change, type, description)
+                                              VALUES (:ml, :type, 'bottling potions')
+                                           """), {'ml': -1 * usedRedMl, 'type': '[1, 0, 0, 0]'})
+        if usedGreenMl > 0:
+            connection.execute(sqlalchemy.text("""INSERT INTO ml_ledger (change, type, description)
+                                              VALUES (:ml, :type, 'bottling potions')
+                                           """), {'ml': -1 * usedGreenMl, 'type': '[0, 1, 0, 0]'})
+        if usedBlueMl > 0:
+            connection.execute(sqlalchemy.text("""INSERT INTO ml_ledger (change, type, description)
+                                              VALUES (:ml, :type, 'bottling potions')
+                                           """), {'ml': -1 * usedBlueMl, 'type': '[0, 0, 1, 0]'})
+        if usedDarkMl > 0:
+            connection.execute(sqlalchemy.text("""INSERT INTO ml_ledger (change, type, description)
+                                              VALUES (:ml, :type, 'bottling potions')
+                                           """), {'ml': -1 * usedDarkMl, 'type': '[0, 0, 0, 1]'})
+            
         connection.execute(sqlalchemy.text("""UPDATE global_inventory 
                                            SET num_red_ml = num_red_ml - :usedRedMl,
                                             num_green_ml = num_green_ml - :usedGreenMl,
@@ -57,7 +74,15 @@ def get_bottle_plan():
 
     newpotions = 0
     with db.engine.begin() as connection:
-        currentRedMl, currentGreenMl, currentBlueMl, currentDarkMl, capacity = connection.execute(sqlalchemy.text("SELECT num_red_ml, num_green_ml, num_blue_ml, num_dark_ml, potion_capacity FROM global_inventory")).fetchone()
+        #currentRedMl, currentGreenMl, currentBlueMl, currentDarkMl, capacity = connection.execute(sqlalchemy.text("SELECT num_red_ml, num_green_ml, num_blue_ml, num_dark_ml, potion_capacity FROM global_inventory")).fetchone()
+        currentRedMl, currentGreenMl, currentBlueMl, currentDarkMl = connection.execute(sqlalchemy.text(""" SELECT 
+                                                    SUM(CASE WHEN type = '[1, 0, 0, 0]' THEN change ELSE 0 END),
+                                                    SUM(CASE WHEN type = '[0, 1, 0, 0]' THEN change ELSE 0 END),
+                                                    SUM(CASE WHEN type = '[0, 0, 1, 0]' THEN change ELSE 0 END),
+                                                    SUM(CASE WHEN type = '[0, 0, 0, 1]' THEN change ELSE 0 END)
+                                                    FROM ml_ledger
+                                                    """)).fetchone()
+        capacity = connection.execute(sqlalchemy.text("SELECT potion_capacity FROM global_inventory")).fetchone()[0]
         total_potions = connection.execute(sqlalchemy.text("SELECT SUM(quantity) FROM potions")).fetchone()[0]
         plan = []
         
