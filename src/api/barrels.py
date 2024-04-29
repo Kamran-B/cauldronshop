@@ -60,14 +60,6 @@ def post_deliver_barrels(barrels_delivered: list[Barrel], order_id: int):
                                            """), {'cost': -1 * cost})
 
         
-        connection.execute(sqlalchemy.text("""UPDATE global_inventory 
-                                           SET num_red_ml = num_red_ml + :newRed,
-                                           num_green_ml = num_green_ml + :newGreen,
-                                           num_blue_ml = num_blue_ml + :newBlue,
-                                           num_dark_ml = num_dark_ml + :newDark,
-                                           gold = gold - :cost
-                                           """), {'newRed': newRedMl, 'newGreen': newGreenMl, 'newBlue': newBlueMl, 'newDark': newDarkMl, 'cost': cost})
-
         print(f"gold paid: {cost}, red: {newRedMl}, green: {newGreenMl}, blue: {newBlueMl}, dark: {newDarkMl}")
 
     return "OK"
@@ -80,14 +72,15 @@ def get_wholesale_purchase_plan(wholesale_catalog: list[Barrel]):
     with db.engine.begin() as connection:
         #currentgold, redStock, greenStock, blueStock, darkStock, capacity = connection.execute(sqlalchemy.text("SELECT gold, num_red_ml, num_green_ml, num_blue_ml, num_dark_ml, ml_capacity FROM global_inventory")).fetchone()
         redStock, greenStock, blueStock, darkStock = connection.execute(sqlalchemy.text(""" SELECT 
-                                                    SUM(CASE WHEN type = '[1, 0, 0, 0]' THEN change ELSE 0 END),
-                                                    SUM(CASE WHEN type = '[0, 1, 0, 0]' THEN change ELSE 0 END),
-                                                    SUM(CASE WHEN type = '[0, 0, 1, 0]' THEN change ELSE 0 END),
-                                                    SUM(CASE WHEN type = '[0, 0, 0, 1]' THEN change ELSE 0 END)
+                                                    COALESCE(SUM(CASE WHEN type = '[1, 0, 0, 0]' THEN change ELSE 0 END), 0),
+                                                    COALESCE(SUM(CASE WHEN type = '[0, 1, 0, 0]' THEN change ELSE 0 END), 0),
+                                                    COALESCE(SUM(CASE WHEN type = '[0, 0, 1, 0]' THEN change ELSE 0 END), 0),
+                                                    COALESCE(SUM(CASE WHEN type = '[0, 0, 0, 1]' THEN change ELSE 0 END), 0)
                                                     FROM ml_ledger
                                                     """)).fetchone()
+        print(redStock)
         currentgold = connection.execute(sqlalchemy.text("SELECT sum(change) FROM gold_ledger")).fetchone()[0]
-        capacity = connection.execute(sqlalchemy.text("SELECT ml_capacity FROM global_inventory")).fetchone()[0]
+        capacity = connection.execute(sqlalchemy.text("SELECT SUM(change) FROM capacity_ledger WHERE type = 'ml'")).fetchone()[0]
         total_ml = redStock + greenStock + blueStock + darkStock
         colors = {"red": [1, 0, 0, 0], "green": [0, 1, 0, 0], "blue": [0, 0, 1, 0], "dark": [0, 0, 0, 1]}
         allStock = {"red": redStock, "green": greenStock, "blue": blueStock, "dark": darkStock}

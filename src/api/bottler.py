@@ -5,6 +5,8 @@ from enum import Enum
 from pydantic import BaseModel
 from src.api import auth
 
+import json
+
 router = APIRouter(
     prefix="/bottler",
     tags=["bottler"],
@@ -28,10 +30,14 @@ def post_deliver_bottles(potions_delivered: list[PotionInventory], order_id: int
             usedGreenMl += potion.potion_type[1] * potion.quantity
             usedBlueMl  += potion.potion_type[2] * potion.quantity
             usedDarkMl += potion.potion_type[3] * potion.quantity
-            connection.execute(sqlalchemy.text("""UPDATE potions 
-                                            SET quantity = quantity + :quant
-                                            WHERE type = :type
-                                           """), {'quant': potion.quantity, 'type': str(potion.potion_type)})
+            
+            potion_id = connection.execute(sqlalchemy.text("""SELECT id FROM potions 
+                                                            WHERE type = :type
+                                                            """), {'type': potion.potion_type}).fetchone()[0]
+            
+            connection.execute(sqlalchemy.text("""INSERT INTO potion_ledger (change, potion_id, description)
+                                              VALUES (:quantity, :id, 'bottling potions')
+                                           """), {'quantity': potion.quantity, 'id': potion_id})
             
         if usedRedMl > 0:
             connection.execute(sqlalchemy.text("""INSERT INTO ml_ledger (change, type, description)
@@ -49,14 +55,6 @@ def post_deliver_bottles(potions_delivered: list[PotionInventory], order_id: int
             connection.execute(sqlalchemy.text("""INSERT INTO ml_ledger (change, type, description)
                                               VALUES (:ml, :type, 'bottling potions')
                                            """), {'ml': -1 * usedDarkMl, 'type': '[0, 0, 0, 1]'})
-            
-        connection.execute(sqlalchemy.text("""UPDATE global_inventory 
-                                           SET num_red_ml = num_red_ml - :usedRedMl,
-                                            num_green_ml = num_green_ml - :usedGreenMl,
-                                            num_blue_ml = num_blue_ml - :usedBlueMl,
-                                            num_dark_ml = num_dark_ml - :usedDarkMl
-                                           """), {'usedRedMl': usedRedMl, 'usedGreenMl': usedGreenMl, 'usedBlueMl': usedBlueMl, 'usedDarkMl': usedDarkMl})
-
 
     return "OK"
 
@@ -82,12 +80,16 @@ def get_bottle_plan():
                                                     SUM(CASE WHEN type = '[0, 0, 0, 1]' THEN change ELSE 0 END)
                                                     FROM ml_ledger
                                                     """)).fetchone()
-        capacity = connection.execute(sqlalchemy.text("SELECT potion_capacity FROM global_inventory")).fetchone()[0]
-        total_potions = connection.execute(sqlalchemy.text("SELECT SUM(quantity) FROM potions")).fetchone()[0]
+        capacity = connection.execute(sqlalchemy.text("SELECT SUM(change) FROM capacity_ledger WHERE type = 'potion'")).fetchone()[0]
+        total_potions = connection.execute(sqlalchemy.text("SELECT COALESCE(SUM(change), 0) FROM potion_ledger")).fetchone()[0]
         plan = []
         
-        lowStock = connection.execute(sqlalchemy.text("SELECT type FROM potions ORDER BY quantity ASC, price DESC")).fetchall()
-        print(lowStock)
+        lowStock = connection.execute(sqlalchemy.text("""SELECT type
+                                                         FROM potions
+                                                         LEFT JOIN potion_ledger ON potions.id = potion_ledger.potion_id
+                                                         GROUP BY type
+                                                         ORDER BY COALESCE(SUM(potion_ledger.change), 0) ASC""")).fetchall()
+        print("current stock:", lowStock)
         for i in range(len(lowStock)):
             lowStock[i] = lowStock[i][0][1:-1].split(", ")
             lowStock[i] = [int(x) for x in lowStock[i]]
