@@ -33,7 +33,7 @@ def post_deliver_bottles(potions_delivered: list[PotionInventory], order_id: int
             
             potion_id = connection.execute(sqlalchemy.text("""SELECT id FROM potions 
                                                             WHERE type = :type
-                                                            """), {'type': potion.potion_type}).fetchone()[0]
+                                                            """), {'type': json.dumps(potion.potion_type)}).fetchone()[0]
             
             connection.execute(sqlalchemy.text("""INSERT INTO potion_ledger (change, potion_id, description)
                                               VALUES (:quantity, :id, 'bottling potions')
@@ -70,7 +70,6 @@ def get_bottle_plan():
 
     # Initial logic: bottle all barrels into red potions.
 
-    newpotions = 0
     with db.engine.begin() as connection:
         #currentRedMl, currentGreenMl, currentBlueMl, currentDarkMl, capacity = connection.execute(sqlalchemy.text("SELECT num_red_ml, num_green_ml, num_blue_ml, num_dark_ml, potion_capacity FROM global_inventory")).fetchone()
         currentRedMl, currentGreenMl, currentBlueMl, currentDarkMl = connection.execute(sqlalchemy.text(""" SELECT 
