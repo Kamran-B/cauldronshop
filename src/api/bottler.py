@@ -74,10 +74,10 @@ def get_bottle_plan():
     with db.engine.begin() as connection:
         #currentRedMl, currentGreenMl, currentBlueMl, currentDarkMl, capacity = connection.execute(sqlalchemy.text("SELECT num_red_ml, num_green_ml, num_blue_ml, num_dark_ml, potion_capacity FROM global_inventory")).fetchone()
         currentRedMl, currentGreenMl, currentBlueMl, currentDarkMl = connection.execute(sqlalchemy.text(""" SELECT 
-                                                    SUM(CASE WHEN type = '[1, 0, 0, 0]' THEN change ELSE 0 END),
-                                                    SUM(CASE WHEN type = '[0, 1, 0, 0]' THEN change ELSE 0 END),
-                                                    SUM(CASE WHEN type = '[0, 0, 1, 0]' THEN change ELSE 0 END),
-                                                    SUM(CASE WHEN type = '[0, 0, 0, 1]' THEN change ELSE 0 END)
+                                                    COALESCE(SUM(CASE WHEN type = '[1, 0, 0, 0]' THEN change ELSE 0 END), 0),
+                                                    COALESCE(SUM(CASE WHEN type = '[0, 1, 0, 0]' THEN change ELSE 0 END), 0),
+                                                    COALESCE(SUM(CASE WHEN type = '[0, 0, 1, 0]' THEN change ELSE 0 END), 0),
+                                                    COALESCE(SUM(CASE WHEN type = '[0, 0, 0, 1]' THEN change ELSE 0 END), 0)
                                                     FROM ml_ledger
                                                     """)).fetchone()
         capacity = connection.execute(sqlalchemy.text("SELECT SUM(change) FROM capacity_ledger WHERE type = 'potion'")).fetchone()[0]
