@@ -82,11 +82,11 @@ def get_bottle_plan():
         total_potions = connection.execute(sqlalchemy.text("SELECT COALESCE(SUM(change), 0) FROM potion_ledger")).fetchone()[0]
         plan = []
         
-        stock = connection.execute(sqlalchemy.text("""SELECT type, max_quantity, potion_id
+        stock = connection.execute(sqlalchemy.text("""SELECT type, max_quantity, potions.id
                                                          FROM potions
                                                          LEFT JOIN potion_ledger ON potions.id = potion_ledger.potion_id
-                                                         GROUP BY type, max_quantity, potion_id
-                                                         ORDER BY COALESCE(SUM(potion_ledger.change), 0) ASC""")).fetchall()
+                                                         GROUP BY type, max_quantity, potions.id
+                                                         ORDER BY COALESCE(SUM(potion_ledger.change), 0) ASC, potions.price DESC""")).fetchall()
         print("current stock:", stock)
         lowStock = [i for i in stock]
         for i in range(len(stock)):
