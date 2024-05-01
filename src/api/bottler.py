@@ -71,7 +71,6 @@ def get_bottle_plan():
     # Initial logic: bottle all barrels into red potions.
 
     with db.engine.begin() as connection:
-        #currentRedMl, currentGreenMl, currentBlueMl, currentDarkMl, capacity = connection.execute(sqlalchemy.text("SELECT num_red_ml, num_green_ml, num_blue_ml, num_dark_ml, potion_capacity FROM global_inventory")).fetchone()
         currentRedMl, currentGreenMl, currentBlueMl, currentDarkMl = connection.execute(sqlalchemy.text(""" SELECT 
                                                     COALESCE(SUM(CASE WHEN type = '[1, 0, 0, 0]' THEN change ELSE 0 END), 0),
                                                     COALESCE(SUM(CASE WHEN type = '[0, 1, 0, 0]' THEN change ELSE 0 END), 0),
@@ -83,21 +82,33 @@ def get_bottle_plan():
         total_potions = connection.execute(sqlalchemy.text("SELECT COALESCE(SUM(change), 0) FROM potion_ledger")).fetchone()[0]
         plan = []
         
-        lowStock = connection.execute(sqlalchemy.text("""SELECT type
+        stock = connection.execute(sqlalchemy.text("""SELECT type, max_quantity, potion_id
                                                          FROM potions
                                                          LEFT JOIN potion_ledger ON potions.id = potion_ledger.potion_id
-                                                         GROUP BY type
+                                                         GROUP BY type, max_quantity, potion_id
                                                          ORDER BY COALESCE(SUM(potion_ledger.change), 0) ASC""")).fetchall()
-        print("current stock:", lowStock)
-        for i in range(len(lowStock)):
-            lowStock[i] = lowStock[i][0][1:-1].split(", ")
+        print("current stock:", stock)
+        lowStock = [i for i in stock]
+        for i in range(len(stock)):
+            lowStock[i] = stock[i][0][1:-1].split(", ")
             lowStock[i] = [int(x) for x in lowStock[i]]
         
+        i = 0
         for type in lowStock:
+            maxForType = stock[i][1]
+            numType = connection.execute(sqlalchemy.text("SELECT COALESCE(SUM(change), 0) FROM potion_ledger WHERE potion_id = :id"), {'id': stock[i][2]}).fetchone()[0]
+            i += 1
+
+            if numType >= maxForType:
+                continue
+
             quantity = 1
             while currentRedMl >= type[0] * quantity and currentGreenMl >= type[1] * quantity and currentBlueMl >= type[2] * quantity and currentDarkMl >= type[3] * quantity:
                 quantity += 1
             quantity -= 1
+
+            if numType + quantity > maxForType:
+                quantity = maxForType - numType
 
             if total_potions + quantity > capacity:
                 quantity = capacity - total_potions
