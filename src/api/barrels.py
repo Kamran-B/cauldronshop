@@ -96,7 +96,7 @@ def get_wholesale_purchase_plan(wholesale_catalog: list[Barrel]):
             bestIndex = None
             bestValue = 0
             for i in range (len(colorBarrels)):
-                if colorBarrels[i].price <= currentgold and (colorBarrels[i].ml_per_barrel / colorBarrels[i].price) > bestValue:
+                if colorBarrels[i].price <= currentgold and colorBarrels[i].ml_per_barrel <= 5000 and (colorBarrels[i].ml_per_barrel / colorBarrels[i].price) > bestValue:
                     bestIndex = i
                     bestValue = colorBarrels[i].ml_per_barrel / colorBarrels[i].price
             
