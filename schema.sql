@@ -15,7 +15,8 @@ CREATE TABLE potions (
     sku TEXT,
     name TEXT,
     type TEXT,
-    price INT4
+    price INT4,
+    max_quantity INT4
 );
 
 CREATE TABLE cart_items (
@@ -72,23 +73,23 @@ VALUES (50, 'potion', 'initial capacity');
 INSERT INTO capacity_ledger (change, type, description) 
 VALUES (10000, 'ml', 'initial capacity');
 
-INSERT INTO potions (sku, name, type, quantity, price) 
-VALUES ('RED_POTION_0', 'red potion', '[100, 0, 0, 0]', 0, 40);
+INSERT INTO potions (sku, name, type, max_quantity, price) 
+VALUES ('RED_POTION_0', 'red potion', '[100, 0, 0, 0]', 15, 40);
 
-INSERT INTO potions (sku, name, type, quantity, price) 
-VALUES ('GREEN_POTION_0', 'green potion', '[0, 100, 0, 0]', 0, 40);
+INSERT INTO potions (sku, name, type, max_quantity, price) 
+VALUES ('GREEN_POTION_0', 'green potion', '[0, 100, 0, 0]', 15, 40);
     
-INSERT INTO potions (sku, name, type, quantity, price) 
-VALUES ('BLUE_POTION_0', 'blue potion', '[0, 0, 100, 0]', 0, 40);
+INSERT INTO potions (sku, name, type, max_quantity, price) 
+VALUES ('BLUE_POTION_0', 'blue potion', '[0, 0, 100, 0]', 15, 40);
     
-INSERT INTO potions (sku, name, type, quantity, price) 
-VALUES ('DARK_POTION_0', 'dark potion', '[0, 0, 0, 100]', 0, 40);
+INSERT INTO potions (sku, name, type, max_quantity, price) 
+VALUES ('DARK_POTION_0', 'dark potion', '[0, 0, 0, 100]', 20, 40);
 
-INSERT INTO potions (sku, name, type, quantity, price) 
-VALUES ('PURPLE_POTION_0', 'purple potion', '[50, 0, 50, 0]', 0, 45);
+INSERT INTO potions (sku, name, type, max_quantity, price) 
+VALUES ('PURPLE_POTION_0', 'purple potion', '[50, 0, 50, 0]', 10, 45);
 
-INSERT INTO potions (sku, name, type, quantity, price) 
-VALUES ('YELLOW_POTION_0', 'yellow potion', '[50, 50, 0, 0]', 0, 50);
+INSERT INTO potions (sku, name, type, max_quantity, price) 
+VALUES ('YELLOW_POTION_0', 'yellow potion', '[50, 50, 0, 0]', 10, 50);
 
-INSERT INTO potions (sku, name, type, quantity, price) 
-VALUES ('WHITE_POTION_0', 'white potion', '[34, 33, 33, 0]', 0, 60);
+INSERT INTO potions (sku, name, type, max_quantity, price) 
+VALUES ('WHITE_POTION_0', 'white potion', '[34, 33, 33, 0]', 10, 60);
