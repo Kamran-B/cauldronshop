@@ -64,14 +64,14 @@ def deliver_capacity_plan(capacity_purchase : CapacityPurchase, order_id: int):
         if capacity_purchase.potion_capacity > 0:
             connection.execute(sqlalchemy.text("""INSERT INTO capacity_ledger (change, type, description)
                                                 VALUES (:cap, 'potion', 'bought potion capacity')
-                                                """), {'cap': capacity_purchase.potion_capacity})
+                                                """), {'cap': capacity_purchase.potion_capacity * 50})
         
         if capacity_purchase.ml_capacity > 0:
             connection.execute(sqlalchemy.text("""INSERT INTO capacity_ledger (change, type, description)
                                                 VALUES (:cap, 'ml', 'bought ml capacity')
-                                                """), {'cap': capacity_purchase.ml_capacity})
+                                                """), {'cap': capacity_purchase.ml_capacity * 10000})
         
-        units_bought = (capacity_purchase.potion_capacity / 50) + (capacity_purchase.ml_capacity / 10000)
+        units_bought = capacity_purchase.potion_capacity + capacity_purchase.ml_capacity
 
         connection.execute(sqlalchemy.text("""INSERT INTO gold_ledger (change, description)
                                                 VALUES (:cost, 'bought capacity')
