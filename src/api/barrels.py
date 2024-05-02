@@ -95,6 +95,10 @@ def get_wholesale_purchase_plan(wholesale_catalog: list[Barrel]):
             print(colorBarrels)
             bestIndex = None
             bestValue = 0
+
+            if allStock[color] > 500:
+                continue
+
             for i in range (len(colorBarrels)):
                 if colorBarrels[i].price <= currentgold and colorBarrels[i].ml_per_barrel <= 5000 and colorBarrels[i].ml_per_barrel <= (capacity - total_ml) and (colorBarrels[i].ml_per_barrel / colorBarrels[i].price) > bestValue:
                     bestIndex = i
