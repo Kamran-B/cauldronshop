@@ -29,18 +29,22 @@ def get_capacity_plan():
     """
     with db.engine.begin() as connection:
         potion_capacity = connection.execute(sqlalchemy.text("SELECT SUM(change) FROM capacity_ledger WHERE type = 'potion'")).fetchone()[0]
+        current_potions = connection.execute(sqlalchemy.text("SELECT SUM(change) FROM potion_ledger")).fetchone()[0]
         ml_capacity = connection.execute(sqlalchemy.text("SELECT SUM(change) FROM capacity_ledger WHERE type = 'ml'")).fetchone()[0]
+        current_ml = connection.execute(sqlalchemy.text("SELECT SUM(change) FROM ml_ledger")).fetchone()[0]
         gold = connection.execute(sqlalchemy.text("SELECT SUM(change) FROM gold_ledger")).fetchone()[0]
 
     new_ml_cap = 0
     new_potion_cap = 0
     if gold > 1500:
         if (ml_capacity / 10000) <= (potion_capacity / 50):
-            gold -= 1000
-            new_ml_cap += 1
+            if current_ml > 0.65 * ml_capacity:
+                gold -= 1000
+                new_ml_cap += 1
         else:
-            gold -= 1000
-            new_potion_cap += 1
+            if current_potions > 0.65 * potion_capacity:
+                gold -= 1000
+                new_potion_cap += 1
 
 
     return {
