@@ -54,6 +54,11 @@ def search_orders(
     time is 5 total line items.
     """
 
+    if search_page == "":
+        off = 0
+    else:
+        off = int(search_page)
+
     with db.engine.begin() as connection:
         stmt = (
             sqlalchemy.select(
@@ -69,7 +74,7 @@ def search_orders(
                 db.potions.c.sku,
             )
             .limit(5)
-            #.order_by(sort_col, db.movies.c.movie_id)
+            .offset(off)
             .select_from(
                 db.cart_items
                 .join(db.carts, db.cart_items.c.cart_id == db.carts.c.id)
@@ -77,6 +82,20 @@ def search_orders(
                 .join(db.potions, db.cart_items.c.potion_id == db.potions.c.id)
             )
         )
+
+        if sort_col == search_sort_options.timestamp:
+            order_by = db.carts.c.timestamp
+        elif sort_col == search_sort_options.customer_name:
+            order_by = db.customers.c.name
+        elif sort_col == search_sort_options.item_sku:
+            order_by = db.potions.c.sku
+        elif sort_col == search_sort_options.line_item_total:
+            order_by = db.cart_items.c.quantity * db.cart_items.c.price
+
+        if sort_order == search_sort_order.desc:
+            stmt = stmt.order_by(order_by.desc())
+        else:
+            stmt = stmt.order_by(order_by.asc())
 
         if customer_name != "":
             stmt = stmt.where(db.customers.c.name == customer_name)
@@ -97,9 +116,17 @@ def search_orders(
             "timestamp": item[8],
         })
 
+    prev = ""
+    next = ""
+    if off >= 5:
+        prev = str(off - 5)
+
+    if len(purchases) >= off + 5:
+        next = str(off + 5)
+
     return {
-        "previous": "",
-        "next": "",
+        "previous": prev,
+        "next": next,
         "results": results,
     }
 
