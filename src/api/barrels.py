@@ -105,9 +105,9 @@ def get_wholesale_purchase_plan(wholesale_catalog: list[Barrel]):
                     break
 
                 if colorBarrels[i].price <= currentgold and colorBarrels[i].ml_per_barrel <= (capacity - total_ml) and (colorBarrels[i].ml_per_barrel / colorBarrels[i].price) > bestValue:
-                    if colorBarrels[i].potion_type == '[0, 0, 0, 1]' or (colorBarrels[i].ml_per_barrel <= 5000 and colorBarrels[i].potion_type != '[0, 0, 0, 1]'):
-                        bestIndex = i
-                        bestValue = colorBarrels[i].ml_per_barrel / colorBarrels[i].price
+                    #if colorBarrels[i].potion_type == '[0, 0, 0, 1]' or (colorBarrels[i].ml_per_barrel <= 5000 and colorBarrels[i].potion_type != '[0, 0, 0, 1]'):
+                    bestIndex = i
+                    bestValue = colorBarrels[i].ml_per_barrel / colorBarrels[i].price
             
             if bestIndex is not None:
                 quantity = min((currentgold // colorBarrels[i].price) // 2, colorBarrels[i].quantity)
