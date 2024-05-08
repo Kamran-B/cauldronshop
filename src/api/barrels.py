@@ -96,8 +96,8 @@ def get_wholesale_purchase_plan(wholesale_catalog: list[Barrel]):
             bestIndex = None
             bestValue = 0
 
-            if allStock[color] > 500:
-                continue
+            """if allStock[color] > 500:
+                continue"""
 
             for i in range (len(colorBarrels)):
                 if colorBarrels[i].potion_type == '[0, 0, 0, 1]' and colorBarrels[i].price <= currentgold and colorBarrels[i].ml_per_barrel <= (capacity - total_ml):
