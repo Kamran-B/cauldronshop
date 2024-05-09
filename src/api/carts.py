@@ -98,10 +98,10 @@ def search_orders(
             stmt = stmt.order_by(order_by.asc())
 
         if customer_name != "":
-            stmt = stmt.where(db.customers.c.name == customer_name)
+            stmt = stmt.where(db.customers.c.name.like(f"%{customer_name}%"))
 
         if potion_sku != "":
-            stmt = stmt.where(db.potions.c.sku == potion_sku)
+            stmt = stmt.where(db.potions.c.sku.like(f"%{potion_sku}%"))
 
         purchases = connection.execute(stmt).fetchall()
         print(purchases)
