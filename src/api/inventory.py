@@ -38,7 +38,7 @@ def get_capacity_plan():
     new_potion_cap = 0
     if gold > 1500:
         if (ml_capacity / 10000) <= (potion_capacity / 50):
-            if current_ml > 0.65 * ml_capacity:
+            if True:#current_ml > 0.65 * ml_capacity:
                 gold -= 1000
                 new_ml_cap += 1
         else:
