@@ -21,6 +21,9 @@ def get_catalog():
         print("Current inventory:", stock)
 
         for potion in stock:
+            if potion[0] in ["RED_POTION_0", "DARK_POTION_0"]:
+                continue
+            
             if potion[2] > 0:
                 catalog.append({
                 "sku": potion[0],
