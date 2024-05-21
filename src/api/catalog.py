@@ -21,6 +21,8 @@ def get_catalog():
         print("Current inventory:", stock)
 
         for potion in stock:
+            if potion.sku == "PLACE_HOLDER":
+                continue
 
             if potion[2] > 0:
                 catalog.append({
