@@ -124,5 +124,5 @@ def get_wholesale_purchase_plan(wholesale_catalog: list[Barrel]):
                 print("buying barrel sku:", colorBarrels[bestIndex].sku, "quantity:", quantity, "current gold before purchase:", currentgold)
                 currentgold -= colorBarrels[bestIndex].price * quantity
 
-    return plan
+    return []#plan
 
